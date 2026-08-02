@@ -38,7 +38,7 @@ let memoryProducts = [
     { _id: 'b3', name: 'Salted Caramel Brownie', category: 'Brownies', price: 180, description: 'Fudgy brownie with a salted caramel swirl and sea salt flakes.', image: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=500', rating: 4.9 },
     { _id: 'b4', name: 'Red Velvet Brownie', category: 'Brownies', price: 165, description: 'Vibrant red velvet brownie with cream cheese swirl on top.', image: 'https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=500', rating: 4.5 },
     { _id: 'b5', name: 'Peanut Butter Brownie', category: 'Brownies', price: 175, description: 'Chocolate brownie with a rich peanut butter ripple throughout.', image: 'https://images.unsplash.com/photo-1607920591413-4ec007e70023?w=500', rating: 4.6 },
-    { _id: 'b6', name: 'Double Chocolate Brownie', category: 'Brownies', price: 160, description: 'Extra chocolatey with both dark and white chocolate chips.', image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=500', rating: 4.7 },
+    { _id: 'b6', name: 'Double Chocolate Brownie', category: 'Brownies', price: 160, description: 'Extra chocolatey with both dark and white chocolate chips.', image: 'https://images.unsplash.com/photo-1558312657-b2dead03d494?w=500', rating: 4.7 },
     { _id: 'b7', name: 'Espresso Brownie', category: 'Brownies', price: 170, description: 'Rich brownie infused with espresso for a bold coffee kick.', image: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=500', rating: 4.4 },
     { _id: 'b8', name: 'Cream Cheese Brownie', category: 'Brownies', price: 175, description: 'Marble swirl of tangy cream cheese in a dense chocolate base.', image: 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=500', rating: 4.6 },
     { _id: 'b9', name: 'Mint Chocolate Brownie', category: 'Brownies', price: 165, description: 'Cool mint layer on top of a dense dark chocolate brownie.', image: 'https://images.unsplash.com/photo-1571506165871-ee72a35bc9d4?w=500', rating: 4.5 },
@@ -107,6 +107,16 @@ export default function handler(req, res) {
                 isAdmin: user.isAdmin,
                 token: 'token_' + Date.now()
             });
+        }
+
+        // Admin User Database View
+        if (url.includes('admin/users')) {
+            return sendJson(200, memoryUsers.map(u => ({
+                _id: u._id,
+                name: u.name,
+                email: u.email,
+                isAdmin: u.isAdmin
+            })));
         }
 
         // Products List

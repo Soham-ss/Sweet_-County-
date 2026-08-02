@@ -11,16 +11,17 @@ const statusColors = {
     'Cancelled': '#cc4444'
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5000' : '';
 
 const AdminDashboard = () => {
-    const { user, login } = useContext(AuthContext);
+    const { user } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
+    const [usersList, setUsersList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filter, setFilter] = useState('All');
     const [updatingId, setUpdatingId] = useState(null);
-    const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'settings'
+    const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'users', or 'settings'
 
     // Change password state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -35,6 +36,7 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         fetchOrders();
+        fetchUsers();
     }, [user]);
 
     const fetchOrders = async () => {
@@ -46,9 +48,23 @@ const AdminDashboard = () => {
             const data = await response.json();
             setOrders(data);
         } catch (err) {
-            setError('Could not load orders. Is the backend running?');
+            setError('Could not load orders.');
         }
         setLoading(false);
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setUsersList(data);
+            }
+        } catch (err) {
+            console.error('Error fetching user database:', err);
+        }
     };
 
     const updateStatus = async (orderId, newStatus) => {
@@ -116,6 +132,7 @@ const AdminDashboard = () => {
                 setAdminName('');
                 setAdminEmail('');
                 setAdminPassword('');
+                fetchUsers();
             }
         } catch (err) {
             setAdminMsg({ text: 'Server error', isError: true });
@@ -139,13 +156,16 @@ const AdminDashboard = () => {
     const totalRevenue = orders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + o.totalAmount, 0);
 
     return (
-        <div className="discovery-section" style={{ maxWidth: '1100px', minHeight: '60vh' }}>
-            <h2 style={{ marginBottom: '20px', color: '#3d2b1f' }}>🛠️ Admin Dashboard</h2>
+        <div className="discovery-section" style={{ maxWidth: '1100px', minHeight: '60vh', margin: '0 auto', padding: '40px 20px' }}>
+            <h2 style={{ marginBottom: '20px', color: '#3d2b1f', fontFamily: 'Playfair Display, serif', fontSize: '2.2rem' }}>
+                🛠️ Admin Dashboard
+            </h2>
 
             {/* Tab Navigation */}
-            <div style={{ display: 'flex', gap: '0', marginBottom: '25px', borderBottom: '2px solid #e0d5c1' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '25px', borderBottom: '2px solid #e0d5c1' }}>
                 {[
                     { key: 'orders', label: '📦 Orders', count: totalOrders },
+                    { key: 'users', label: '👥 User Database', count: usersList.length },
                     { key: 'settings', label: '⚙️ Settings' }
                 ].map(tab => (
                     <button
@@ -287,6 +307,52 @@ const AdminDashboard = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {/* =================== USER DATABASE TAB =================== */}
+            {activeTab === 'users' && (
+                <div style={{ background: '#fff', padding: '25px', borderRadius: '20px', boxShadow: '0 6px 20px rgba(0,0,0,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h3 style={{ color: '#3d2b1f', fontSize: '1.4rem' }}>👥 Customer Accounts Database</h3>
+                            <p style={{ color: '#7a635c', fontSize: '0.9rem' }}>Registered accounts in your bakery system</p>
+                        </div>
+                        <span style={{ background: '#fdf6f0', color: '#a36b4f', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                            Total Accounts: {usersList.length}
+                        </span>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #f0ebe4', color: '#7a635c', fontSize: '0.9rem' }}>
+                                    <th style={{ padding: '12px 16px' }}>User ID</th>
+                                    <th style={{ padding: '12px 16px' }}>Full Name</th>
+                                    <th style={{ padding: '12px 16px' }}>Email Address</th>
+                                    <th style={{ padding: '12px 16px' }}>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {usersList.map((u) => (
+                                    <tr key={u._id} style={{ borderBottom: '1px solid #f9f5ef', color: '#3d2b1f' }}>
+                                        <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#999' }}>#{u._id}</td>
+                                        <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{u.name}</td>
+                                        <td style={{ padding: '14px 16px', color: '#a36b4f' }}>{u.email}</td>
+                                        <td style={{ padding: '14px 16px' }}>
+                                            <span style={{
+                                                padding: '4px 12px', borderRadius: '14px', fontSize: '0.78rem', fontWeight: 'bold',
+                                                background: u.isAdmin ? '#4b3832' : '#e8f5e9',
+                                                color: u.isAdmin ? '#ffffff' : '#2e7d32'
+                                            }}>
+                                                {u.isAdmin ? '👑 Admin' : '👤 Customer'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
 
             {/* =================== SETTINGS TAB =================== */}
