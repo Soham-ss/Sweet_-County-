@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
 const ProfilePage = () => {
     const { user, logout } = useContext(AuthContext);
@@ -26,7 +26,7 @@ const ProfilePage = () => {
                 const data = await response.json();
                 setOrders(data);
             } catch (err) {
-                setError('Could not load your orders. Is the backend running?');
+                setError('Could not load your orders.');
             }
             setLoading(false);
         };

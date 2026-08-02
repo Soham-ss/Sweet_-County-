@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import logo from '../logo.png';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
 const Login = () => {
     const [mode, setMode] = useState('user'); // 'user' or 'admin'
@@ -52,7 +52,6 @@ const Login = () => {
                 return;
             }
 
-            // Check if user is trying admin login but isn't an admin
             if (mode === 'admin' && !data.isAdmin) {
                 setError('This account does not have admin privileges.');
                 setLoading(false);
@@ -227,7 +226,6 @@ const Login = () => {
                     </button>
                 </form>
 
-                {/* Toggle register/login — only for user mode */}
                 {mode === 'user' && (
                     <p
                         style={{
