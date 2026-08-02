@@ -55,89 +55,103 @@ module.exports = (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Content-Type', 'application/json');
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.statusCode = 200;
+        return res.end();
     }
+
+    const sendJson = (statusCode, data) => {
+        res.statusCode = statusCode;
+        res.end(JSON.stringify(data));
+    };
 
     const url = req.url || '';
 
-    // Register
-    if (url.includes('auth/register')) {
-        const { name, email, password } = req.body || {};
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'All fields required' });
+    try {
+        // Register
+        if (url.includes('auth/register')) {
+            const body = req.body || {};
+            const { name, email, password } = body;
+            if (!name || !email || !password) {
+                return sendJson(400, { message: 'All fields required' });
+            }
+            const existing = memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (existing) {
+                return sendJson(400, { message: 'User already exists' });
+            }
+            const newUser = { _id: 'u_' + Date.now(), name, email, password, isAdmin: false };
+            memoryUsers.push(newUser);
+            return sendJson(201, {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                isAdmin: false,
+                token: 'token_' + Date.now()
+            });
         }
-        const existing = memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (existing) {
-            return res.status(400).json({ message: 'User already exists' });
+
+        // Login
+        if (url.includes('auth/login')) {
+            const body = req.body || {};
+            const { email, password } = body;
+            const user = memoryUsers.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+            if (!user) {
+                return sendJson(400, { message: 'Invalid credentials' });
+            }
+            return sendJson(200, {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                token: 'token_' + Date.now()
+            });
         }
-        const newUser = { _id: 'u_' + Date.now(), name, email, password, isAdmin: false };
-        memoryUsers.push(newUser);
-        return res.status(201).json({
-            _id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-            isAdmin: false,
-            token: 'token_' + Date.now()
-        });
+
+        // Products List
+        if (url.includes('products')) {
+            let list = [...memoryProducts];
+            const queryStr = url.includes('?') ? url.split('?')[1] : '';
+            const params = new URLSearchParams(queryStr);
+            const category = params.get('category');
+            const search = params.get('search');
+
+            if (category && category !== 'All') {
+                list = list.filter(p => p.category.toLowerCase() === category.toLowerCase());
+            }
+            if (search) {
+                list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+            }
+            return sendJson(200, list);
+        }
+
+        // Orders
+        if (url.includes('orders')) {
+            if (req.method === 'POST') {
+                const body = req.body || {};
+                const { items, totalAmount, shippingAddress } = body;
+                const newOrder = {
+                    _id: 'ord_' + Date.now(),
+                    items: items || [],
+                    totalAmount: totalAmount || 0,
+                    shippingAddress: shippingAddress || {},
+                    status: 'Confirmed',
+                    createdAt: new Date()
+                };
+                memoryOrders.unshift(newOrder);
+                return sendJson(201, newOrder);
+            }
+            return sendJson(200, memoryOrders);
+        }
+
+        // Payment Verify
+        if (url.includes('payment')) {
+            return sendJson(200, { status: 'success', message: 'Payment verified successfully' });
+        }
+
+        return sendJson(200, { status: 'ok', message: 'Sweet County Vercel API is live! 🎂' });
+    } catch (err) {
+        return sendJson(500, { message: err.message });
     }
-
-    // Login
-    if (url.includes('auth/login')) {
-        const { email, password } = req.body || {};
-        const user = memoryUsers.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-        return res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            token: 'token_' + Date.now()
-        });
-    }
-
-    // Products List
-    if (url.includes('products')) {
-        let list = [...memoryProducts];
-        const queryStr = url.includes('?') ? url.split('?')[1] : '';
-        const params = new URLSearchParams(queryStr);
-        const category = params.get('category');
-        const search = params.get('search');
-
-        if (category && category !== 'All') {
-            list = list.filter(p => p.category.toLowerCase() === category.toLowerCase());
-        }
-        if (search) {
-            list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-        }
-        return res.json(list);
-    }
-
-    // Orders
-    if (url.includes('orders')) {
-        if (req.method === 'POST') {
-            const { items, totalAmount, shippingAddress } = req.body || {};
-            const newOrder = {
-                _id: 'ord_' + Date.now(),
-                items: items || [],
-                totalAmount: totalAmount || 0,
-                shippingAddress: shippingAddress || {},
-                status: 'Confirmed',
-                createdAt: new Date()
-            };
-            memoryOrders.unshift(newOrder);
-            return res.status(201).json(newOrder);
-        }
-        return res.json(memoryOrders);
-    }
-
-    // Payment Verify
-    if (url.includes('payment')) {
-        return res.json({ status: 'success', message: 'Payment verified successfully' });
-    }
-
-    return res.json({ status: 'ok', message: 'Sweet County Vercel API is live! 🎂' });
 };
