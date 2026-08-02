@@ -56,7 +56,7 @@ const seedDB = async () => {
                 { name: 'Blueberry Crumb', category: 'Donuts', price: 110, description: 'Blueberry cake donut with a buttery crumb topping.', image: 'https://images.unsplash.com/photo-1504387828636-abeb50778c0c?w=500', rating: 4.4 },
                 { name: 'Oreo Crunch', category: 'Donuts', price: 115, description: 'Vanilla glazed donut loaded with crushed Oreo cookies.', image: 'https://images.unsplash.com/photo-1612240498936-65f5101365d2?w=500', rating: 4.7 },
                 { name: 'Caramel Delight', category: 'Donuts', price: 105, description: 'Donut drizzled with salted caramel and topped with toffee bits.', image: 'https://images.unsplash.com/photo-1560180474-e8563fd75bab?w=500', rating: 4.5 },
-                { name: 'Matcha Green Tea', category: 'Donuts', price: 125, description: 'Japanese-inspired donut with matcha glaze and white chocolate.', image: 'https://images.unsplash.com/photo-1558326567-98ae2405596b?w=500', rating: 4.3 },
+                { name: 'Matcha Green Tea', category: 'Donuts', price: 125, description: 'Japanese-inspired donut with matcha glaze and white chocolate.', image: 'https://images.unsplash.com/photo-1558312657-b2dead03d494?w=500', rating: 4.3 },
 
                 // ============ BROWNIES ============
                 { name: 'Classic Fudge Brownie', category: 'Brownies', price: 150, description: 'Dense, fudgy brownie with a crackly top and gooey center.', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=500', rating: 4.8 },
@@ -140,10 +140,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// Always start HTTP listener unless running specifically as a Vercel Serverless Function
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
+
+// Bind to 0.0.0.0 on PORT for Render / Cloud deployment
 if (!process.env.VERCEL) {
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 }
 
 module.exports = app;
