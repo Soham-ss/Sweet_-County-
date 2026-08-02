@@ -1,14 +1,3 @@
-const express = require('express');
-const cors = require('cors');
-
-const app = express();
-
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
-app.use(express.json());
-
 let memoryProducts = [
     // ============ CAKES (11) ============
     { _id: 'c1', name: 'Chocolate Truffle', category: 'Cakes', price: 500, description: 'Rich, dense chocolate layers with a velvety ganache finish.', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500', rating: 4.8 },
@@ -62,20 +51,29 @@ let memoryUsers = [
 ];
 let memoryOrders = [];
 
-// Helper for Vercel Serverless Function URL routing
-const handleReq = (req, res) => {
+module.exports = (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     const url = req.url || '';
 
-    if (url.includes('/api/auth/register')) {
+    // Register
+    if (url.includes('auth/register')) {
         const { name, email, password } = req.body || {};
-        if (!name || !email || !password) return res.status(400).json({ message: 'All fields required' });
-
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'All fields required' });
+        }
         const existing = memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (existing) return res.status(400).json({ message: 'User already exists' });
-
+        if (existing) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
         const newUser = { _id: 'u_' + Date.now(), name, email, password, isAdmin: false };
         memoryUsers.push(newUser);
-
         return res.status(201).json({
             _id: newUser._id,
             name: newUser.name,
@@ -85,11 +83,13 @@ const handleReq = (req, res) => {
         });
     }
 
-    if (url.includes('/api/auth/login')) {
+    // Login
+    if (url.includes('auth/login')) {
         const { email, password } = req.body || {};
         const user = memoryUsers.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
-        if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
         return res.json({
             _id: user._id,
             name: user.name,
@@ -99,11 +99,13 @@ const handleReq = (req, res) => {
         });
     }
 
-    if (url.includes('/api/products')) {
-        const queryParams = new URLSearchParams(url.split('?')[1] || '');
-        const category = queryParams.get('category');
-        const search = queryParams.get('search');
+    // Products List
+    if (url.includes('products')) {
         let list = [...memoryProducts];
+        const queryStr = url.includes('?') ? url.split('?')[1] : '';
+        const params = new URLSearchParams(queryStr);
+        const category = params.get('category');
+        const search = params.get('search');
 
         if (category && category !== 'All') {
             list = list.filter(p => p.category.toLowerCase() === category.toLowerCase());
@@ -114,31 +116,28 @@ const handleReq = (req, res) => {
         return res.json(list);
     }
 
-    if (url.includes('/api/orders/my')) {
+    // Orders
+    if (url.includes('orders')) {
+        if (req.method === 'POST') {
+            const { items, totalAmount, shippingAddress } = req.body || {};
+            const newOrder = {
+                _id: 'ord_' + Date.now(),
+                items: items || [],
+                totalAmount: totalAmount || 0,
+                shippingAddress: shippingAddress || {},
+                status: 'Confirmed',
+                createdAt: new Date()
+            };
+            memoryOrders.unshift(newOrder);
+            return res.status(201).json(newOrder);
+        }
         return res.json(memoryOrders);
     }
 
-    if (url.includes('/api/orders')) {
-        const { items, totalAmount, shippingAddress } = req.body || {};
-        const newOrder = {
-            _id: 'ord_' + Date.now(),
-            items: items || [],
-            totalAmount: totalAmount || 0,
-            shippingAddress: shippingAddress || {},
-            status: 'Confirmed',
-            createdAt: new Date()
-        };
-        memoryOrders.unshift(newOrder);
-        return res.status(201).json(newOrder);
-    }
-
-    if (url.includes('/api/payment/verify')) {
+    // Payment Verify
+    if (url.includes('payment')) {
         return res.json({ status: 'success', message: 'Payment verified successfully' });
     }
 
-    return res.json({ status: 'ok', time: new Date() });
+    return res.json({ status: 'ok', message: 'Sweet County Vercel API is live! 🎂' });
 };
-
-app.all('*', handleReq);
-
-module.exports = app;
