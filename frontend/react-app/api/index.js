@@ -51,7 +51,7 @@ let memoryUsers = [
 ];
 let memoryOrders = [];
 
-module.exports = (req, res) => {
+export default function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -154,4 +154,4 @@ module.exports = (req, res) => {
     } catch (err) {
         return sendJson(500, { message: err.message });
     }
-};
+}
