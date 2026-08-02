@@ -4,7 +4,7 @@ import CakeSpotlightModal from './CakeSpotlightModal';
 import BakeryGridBackground from './BakeryGridBackground';
 import { CartContext } from '../context/CartContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5000' : '';
 
 const ProductGrid = ({ category, searchQuery }) => {
   const [products, setProducts] = useState([]);
